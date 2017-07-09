@@ -1,13 +1,40 @@
-# TODO: rewrite recode_na_* to avoid mutate_if ----
-# separate recode_na_* into separate file
+recode_na_character <- function(data) {
+  # addresses the fact that for some variables, NA is read into R as "NA"
+  # this is a technical recoding that makes no assumptions about different kinds
+  # of missingness
+  # to deal with labelled missing values, convert to factor or numeric and use
+  # the appropriate function, AFTER running this function
+  cols_in_order <- names(data)
+  d1 <- Filter(function(x) !is.character(x), data)
+  d2 <- Filter(is.character, data) 
+  d2[d2 == "NA"] <- NA
+  bind_cols(d1, d2) %>% select(one_of(cols_in_order))
+}
 
-cols_in_order <- names(data)
-numeric_vars <- get_vars_char_decimal(data)
-d1 <- data %>% select(-one_of(numeric_vars))
-d2 <- data %>% select(one_of(numeric_vars)) %>% mutate_all(as.numeric)
-bind_cols(d1, d2) %>% select(one_of(cols_in_order))
+recode_na_factor <- function(data) {
+  # NOTE:
+  # there are some rare labels, like "-12 Still breastfeed" and 
+  # "-11 >12 hours" for specific questions
+  # -10, in particular, has a variety of possible labels
+  # these are not handled by this recoding function
+  factor_nas <- c("-9 Not in wave",
+                  "-8 Out of range", 
+                  "-7 N/A",
+                  "-6 Skip", 
+                  "-5 Not asked",
+                  "-4 Multiple ans",
+                  "-3 Missing", 
+                  "-2 Don't know", 
+                  "-1 Refuse")
+  
+  cols_in_order <- names(data)
+  d1 <- Filter(function(x) !is.factor(x), data)
+  d2 <- Filter(is.factor, data)
+  d2[d2 %in% factor_nas] <- NA
+  bind_cols(d1, d2) %>% select(one_of(cols_in_order))
+}
 
-recode_na_labelled <- function(data) {
+recode_na_labelled_OLD <- function(data) {
   cols_in_order <- names(data)
   labelled_vars <- get_vars_labelled(data)
   d1 <- data %>% select(-one_of(labelled_vars)) 
@@ -16,43 +43,29 @@ recode_na_labelled <- function(data) {
   bind_cols(d1, d2) %>% select(one_of(cols_in_order))
 }
 
-recode_na_factor <- function(data) {
-  ## NOTE:
-  ## there are some rare labels, like "-12 Still breastfeed" and 
-  ## "-11 >12 hours" for specific questions
-  ## -10, in particular, has a variety of possible labels
-  ## these are not handled by this recoding function
-  
-  get_vars_continuous()
-  d1 <- df
-  
-  data %>%
-    mutate_if(is.factor, function(x) { 
-      fct_recode(x, 
-                 NULL = "-9 Not in wave",
-                 NULL = "-8 Out of range", 
-                 NULL = "-7 N/A",
-                 NULL = "-6 Skip", 
-                 NULL = "-5 Not asked",
-                 NULL = "-4 Multiple ans",
-                 NULL = "-3 Missing", 
-                 NULL = "-2 Don't know", 
-                 NULL = "-1 Refuse")
-    })
+recode_na_labelled <- function(data) {
+  # Filter() is faster than select()
+  cols_in_order <- names(data)
+  d1 <- Filter(function(x) !is.labelled(x), data)
+  d2 <- Filter(is.labelled, data) 
+  d2[d2 < 0] <- NA
+  bind_cols(d1, d2) %>% select(one_of(cols_in_order))
 }
 
 recode_na_numeric <- function(data) {
-  data %>%
-    mutate_if(is.numeric, function(x) ifelse(x < 0, NA, x))
-}
-
-recode_na_character <- function(data) {
-  data %>%
-    mutate_if(is.character, function(x) ifelse(x == "NA", NA, x))
+  # only recodes non-labelled numerics
+  # use recode_na_labelled for labelled numerics
+  # or convert labelled to numeric first
+  cols_in_order <- names(data)
+  d1 <- Filter(function(x) !is.numeric(x) || is.labelled(x), data)
+  d2 <- Filter(function(x) !is.labelled(x) && is.numeric(x), data) 
+  d2[d2 < 0] <- NA
+  bind_cols(d1, d2) %>% select(one_of(cols_in_order))
 }
 
 recode_na_all <- function(data) {
-  # faster than mutate_if
+  # NOTE: This function takes a very expansive definition of NA
+  # which isn't theoretically justified (particularly for -6s)
   
   factor_nas <- c("-9 Not in wave",
                   "-8 Out of range", 
@@ -64,15 +77,21 @@ recode_na_all <- function(data) {
                   "-2 Don't know", 
                   "-1 Refuse")
   
+  cols_in_order <- names(data)
+  # this should cover all possible variable types
+  # but that isn't validated programmatically
+  d1 <- Filter(is.character, data)
+  d2 <- Filter(function(x) is.numeric(x) || is.labelled(x), data)
+  d3 <- Filter(is.factor, data)
+  
   # character
-  # data[is.character(data) && data == "NA"] <- NA
-  data[data == "NA"] <- NA
+  d1[d1 == "NA"] <- NA
   
   # numeric and labelled
-  data[data < 0] <- NA
+  d2[d2 < 0] <- NA
   
   # factor
-  data[data %in% factors_nas] <- NA
+  d3[d3 %in% factor_nas] <- NA
   
-  data
+  bind_cols(d1, d2, d3) %>% select(one_of(cols_in_order))
 }
