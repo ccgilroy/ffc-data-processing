@@ -11,12 +11,8 @@ recode_na_character <- function(data) {
   bind_cols(d1, d2) %>% select(one_of(cols_in_order))
 }
 
-recode_na_factor <- function(data) {
-  # NOTE:
-  # there are some rare labels, like "-12 Still breastfeed" and 
-  # "-11 >12 hours" for specific questions
-  # -10, in particular, has a variety of possible labels
-  # these are not handled by this recoding function
+set_factor_nas <- function(x) {
+  # helper function for recode_na_factor
   factor_nas <- c("-9 Not in wave",
                   "-8 Out of range", 
                   "-7 N/A",
@@ -26,11 +22,23 @@ recode_na_factor <- function(data) {
                   "-3 Missing", 
                   "-2 Don't know", 
                   "-1 Refuse")
-  
+  x %>%
+    fct_collapse(missing = factor_nas[factor_nas %in% levels(x)]) %>%
+    fct_recode(NULL = "missing")
+}
+
+recode_na_factor <- function(data) {
+  # NOTE:
+  # there are some rare labels, like "-12 Still breastfeed" and 
+  # "-11 >12 hours" for specific questions
+  # -10, in particular, has a variety of possible labels
+  # these are not handled by this recoding function
+  # see list in set_factor_nas 
+
   cols_in_order <- names(data)
   d1 <- Filter(function(x) !is.factor(x), data)
-  d2 <- Filter(is.factor, data)
-  d2[d2 %in% factor_nas] <- NA
+  d2 <- Filter(is.factor, data) %>% Map(set_factor_nas, .)
+  # d2[d2 %in% factor_nas] <- NA
   bind_cols(d1, d2) %>% select(one_of(cols_in_order))
 }
 
@@ -91,7 +99,7 @@ recode_na_all <- function(data) {
   d2[d2 < 0] <- NA
   
   # factor
-  d3[d3 %in% factor_nas] <- NA
+  d3 <- Map(set_factor_nas, d3)
   
   bind_cols(d1, d2, d3) %>% select(one_of(cols_in_order))
 }

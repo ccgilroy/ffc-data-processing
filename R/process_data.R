@@ -25,6 +25,6 @@ process_data_maximal <- function(data) {
     character_to_factor_or_numeric(threshold = 75) %>%
     recode_na_factor() %>%
     recode_na_numeric() %>%
-    subset_remove_vars(get_vars_na) %>%
-    subset_remove_vars(get_vars_unique)
+    subset_vars_remove(get_vars_na) %>%
+    subset_vars_remove(get_vars_unique)
 }
