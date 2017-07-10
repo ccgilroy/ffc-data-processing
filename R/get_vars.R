@@ -1,8 +1,8 @@
 # character variables ----
 
-# ones with decimals are definitely continuous
-# ones with non-numeric string values are definitely categorical
-# ones with only integer values are ambiguous
+# variables with decimals are definitely continuous
+# variables with non-numeric string values are definitely categorical
+# variables with only integer values are ambiguous
 
 get_vars_character <- function(data) {
   chars_info <- vapply(data, is.character, logical(1))
@@ -182,6 +182,7 @@ get_vars_na <- function(data, non_na_responses = 0) {
 
 get_vars_low_variance <- function(data, variance_threshold = 0) {
   # by default, returns variables with zero variance
+  # similar to get_vars_unique, which is recommended over this function
   if (any(vapply(data, is.character, logical(1)))) {
     warning("Convert character variables before evaluating variance")
   }
@@ -195,30 +196,4 @@ get_vars_unique <- function(data, unique_threshold = 1) {
   # increasing unique_threshold is not recommended
   unique_info <- vapply(data, function(x) length(unique(x[!is.na(x)])), numeric(1))
   names(which(unique_info <= unique_threshold))
-}
-
-# other functions ----
-
-get_vars_generic <- function(vars_list) {
-  # if I want a function that's usable with subset_vars...
-  function(data) {
-    vars_list
-  }
-}
-
-get_vars_factors_with_n_levels <- function(data, threshold = 100) {
-  # TODO: figure out what to do with this
-  levels_info <- vapply(data, function(x) ifelse(is.factor(x), length(levels(x)), NA), 
-                        numeric(1))
-  names(which(levels_info >= threshold))
-}
-
-get_vars_negative <- function(data) {
-  # do I actually use this? 
-  # if not, could get rid of it and avoid dilemma
-  # NOTE: this gets labelled variables too
-  # could do !is.labelled(x) && is.numeric(x), as below
-  neg_info <- vapply(data, function(x) ifelse(is.numeric(x), min(x), NA), 
-                     numeric(1))
-  names(neg_info[which(neg_info < 0)])
 }

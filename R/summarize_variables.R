@@ -1,41 +1,23 @@
-process_data_minimal <- function(data) {
-  data %>%
-    recode_na_character() %>%
-    labelled_to_factor() %>%
-    labelled_to_numeric() %>%
-    character_to_factor() %>%
-    character_to_numeric()
-}
-
-process_data_maximal <- function(data) {
-  data %>%
-    recode_na_character() %>%
-    labelled_to_factor() %>%
-    labelled_to_numeric() %>%
-    character_to_factor() %>%
-    character_to_numeric() %>%
-    character_to_factor_or_numeric(threshold = 75) %>%
-    recode_na_factor() %>%
-    recode_na_numeric() %>%
-    subset_remove_vars(get_vars_na) %>%
-    subset_remove_vars(get_vars_unique)
-}
-
-summarize_variable_info <- function(data, process_data = process_data_minimal) {
+summarize_variables <- function(raw_data, 
+                                processed_data = NULL, 
+                                process_data = process_data_minimal) {
   # processes background data, 
   # returning a data frame where each observation is a variable, 
   # with information about labels, non-NA unique values, 
   # and probable variable types
+  # by default, uses process_data_minimal, 
+  # and records unconverted character variables as of "unknown" type
+  # can speed up by passing in processed data separately
   
-  # to keep all labels, start with original background.dta as data
-  label <- vapply(data, function(x) { 
+  # to keep all labels, start with original background.dta as raw_data
+  label <- vapply(raw_data, function(x) { 
     label <- attr(x, "label", exact = TRUE) 
     if (is.null(label)) NA_character_ else label
   }, character(1))
   
   # then, process data
   # by default, minimal processing
-  data <- process_data(data)
+  data <- if(is.null(processed_data)) process_data(raw_data) else processed_data
   
   # gets unique non-NA values
   # if all values are NA, will be 0

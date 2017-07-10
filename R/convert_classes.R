@@ -1,4 +1,6 @@
-summarize_class_info <- function(data) {
+# summary functions ----
+
+summarize_variable_classes <- function(data) {
   # evaluates the class distribution of variables in a data frame
   # use to assess results of class conversion functions
   summary(as.factor(vapply(data, class, character(1))))
@@ -68,10 +70,6 @@ labelled_to_factor <- function(data) {
   bind_cols(d1, d2) %>% select(one_of(cols_in_order))
 }
 
-labelled_to_factor_SLOW <- function(data) {
-  data %>% mutate_if(is_labelled_factor, haven::as_factor)
-}
-
 labelled_to_numeric <- function(data) {
   # converts labeled variables that are likely continuous to numeric
   # avoids use of mutate_if or mutate_at for speedup (with dplyr 0.7.1)
@@ -81,9 +79,3 @@ labelled_to_numeric <- function(data) {
   d2 <- data %>% select(one_of(numeric_vars)) %>% Map(as.numeric, .)
   bind_cols(d1, d2) %>% select(one_of(cols_in_order))
 }
-
-labelled_to_numeric_SLOW <- function(data) {
-  ## roughly 10x slower than above version
-  data %>% mutate_if(is_labelled_numeric, as.numeric)
-}
-
