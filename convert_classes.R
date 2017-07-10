@@ -12,7 +12,7 @@ character_to_numeric <- function(data) {
   cols_in_order <- names(data)
   numeric_vars <- get_vars_char_decimal(data)
   d1 <- data %>% select(-one_of(numeric_vars))
-  d2 <- data %>% select(one_of(numeric_vars)) %>% mutate_all(as.numeric)
+  d2 <- data %>% select(one_of(numeric_vars)) %>% Map(as.numeric, .)
   bind_cols(d1, d2) %>% select(one_of(cols_in_order))
 }
 
@@ -23,14 +23,37 @@ character_to_factor <- function(data) {
   cols_in_order <- names(data)
   factor_vars <- get_vars_char_nonnumeric(data)
   d1 <- data %>% select(-one_of(factor_vars))
-  d2 <- data %>% select(one_of(factor_vars)) %>% mutate_all(as.factor)
+  d2 <- data %>% select(one_of(factor_vars)) %>% Map(as.factor, .)
   bind_cols(d1, d2) %>% select(one_of(cols_in_order))
 }
 
-character_to_factor_or_numeric <- function(data, cutoff = 100) {
-  ## characters with many unique values are likely to be continuous
-  ## how many is 'many'? 50? 100?
-  ## what about censored values? those get handled with character_to_factor
+character_to_factor_or_numeric <- function(data, threshold = 100) {
+  # characters with many unique values are likely to be continuous
+  # characters with few unique values are likely to be categorical
+  # by default, threshold for 'many' is 100, which is very conservative
+  cols_in_order <- names(data)
+  int_vars <- get_vars_char_int(data)
+  d1 <- data %>% select(-one_of(int_vars))
+  d2 <- data %>% select(one_of(int_vars))
+  
+  # does the non-NA thing matter here? maybe should keep, for consistency
+  unique_info <- 
+    vapply(d2, function(x) length(unique(x[!is.na(x)])), numeric(1))
+  
+  # greater than or equal to threshold -> numeric/continuous
+  d2_numeric_vars <- names(which(unique_info >= threshold))
+  d2_numeric <- 
+    d2 %>% 
+    select(one_of(d2_numeric_vars)) %>% 
+    Map(as.numeric, .)
+    
+  # less than threshold -> factor/categorical
+  d2_factor <- 
+    d2 %>% 
+    select(-one_of(d2_numeric_vars)) %>%
+    Map(as.factor, .)
+  
+  bind_cols(d1, d2_numeric, d2_factor) %>% select(one_of(cols_in_order))
 }
 
 # labelled variables ----
@@ -55,7 +78,7 @@ labelled_to_numeric <- function(data) {
   cols_in_order <- names(data)
   numeric_vars <- get_vars_labelled_numeric(data)
   d1 <- data %>% select(-one_of(numeric_vars))
-  d2 <- data %>% select(one_of(numeric_vars)) %>% mutate_all(as.numeric)
+  d2 <- data %>% select(one_of(numeric_vars)) %>% Map(as.numeric, .)
   bind_cols(d1, d2) %>% select(one_of(cols_in_order))
 }
 

@@ -65,7 +65,7 @@ recode_na_numeric <- function(data) {
 
 recode_na_all <- function(data) {
   # NOTE: This function takes a very expansive definition of NA
-  # which isn't theoretically justified (particularly for -6s)
+  # which isn't theoretically justified (particularly for -6 Skip)
   
   factor_nas <- c("-9 Not in wave",
                   "-8 Out of range", 

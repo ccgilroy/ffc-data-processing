@@ -1,0 +1,7 @@
+This data subdirectory should contain the four files 
+provided by the Fragile Families Challenge:
+
+- background.csv
+- background.dta
+- prediction.csv
+- train.csv

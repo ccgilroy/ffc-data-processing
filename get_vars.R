@@ -13,7 +13,7 @@ get_vars_char_decimal <- function(data) {
   # returns characters variables that can be converted to numerics
   # and that take on decimal values
   # this means that they are likely continuous and should be convert to numeric
-  if (any(vapply(background, function(x) is.character(x) && "NA" %in% x, 
+  if (any(vapply(data, function(x) is.character(x) && "NA" %in% x, 
                  logical(1)))) {
     # must convert "NA" to NA before using
     stop("Convert string 'NA' to NA before using.")
@@ -33,7 +33,7 @@ get_vars_char_nonnumeric <- function(data) {
   # returns character variables that cannot be converted to numerics
   # without NA coercion
   # this means they are likely categorical and should be converted to factors
-  if (any(vapply(background, function(x) is.character(x) && "NA" %in% x, 
+  if (any(vapply(data, function(x) is.character(x) && "NA" %in% x, 
                  logical(1)))) {
     # must convert "NA" to NA before using
     stop("Convert string 'NA' to NA before using.")
@@ -56,7 +56,7 @@ get_vars_char_int <- function(data) {
   # and that NEVER take on decimal values
   # it is unclear whether these are categorical or continuous
   # a reasonable heuristic is the number of unique values
-  if (any(vapply(background, function(x) is.character(x) && "NA" %in% x, 
+  if (any(vapply(data, function(x) is.character(x) && "NA" %in% x, 
                  logical(1)))) {
     # must convert "NA" to NA before using
     stop("Convert string 'NA' to NA before using.")
@@ -166,8 +166,10 @@ get_vars_na <- function(data, non_na_responses = 0) {
   # or fewer non-NA responses
   # you should do some NA recoding, at least for character variables, 
   # before running this
-  if (any(vapply(data, function(x) any(x < 0), logical(1)))) {
-    warning("Some variables have negative values. Have you recoded all NAs?")
+  if (any(vapply(data, function(x) is.numeric(x) && any(x < 0, na.rm = TRUE), 
+                 logical(1)), 
+          na.rm = TRUE)) {
+    warning("Some variables have negative values. Have you recoded numeric NAs?")
   }
   if (any(vapply(data, function(x) is.character(x) && "NA" %in% x, 
                  logical(1)))) {
