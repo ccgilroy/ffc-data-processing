@@ -27,7 +27,7 @@ Example 2 subsets to constructed variables, does more extensive data processing 
 For more flexibility and control, you may want to access the provided helper functions directly.
 
 - the `get_vars_*` functions return the *names* of variables satisfying particular criteria.
-- the `recode_na_*` functions turn Stata labelled missing values into proper R `NA`s. As a rule, `recode_na_character` should *always* be run, to convert the string "NA" to proper `NA`s. The other functions (for factors, labelled, and numerics) should be run with caution, and possibly modified. 
+- the `recode_na_*` functions turn Stata labelled missing values into proper R `NA`s. As a rule, `recode_na_character` should *always* be run, to convert the string "NA" to proper `NA`s. The other functions (for factors, labelled, and numerics) should be run with caution, and possibly modified.
 - the `subset_vars_*` functions are convenience wrappers around `dplyr::select` for ease of use with a `get_vars_*` function, e.g. `background %>% subset_vars_keep(get_vars_constructed)`.
 
 ## Notes about variables
@@ -59,3 +59,6 @@ variable_types %>%
 Tobit models are a way of modeling censored dependent variables, but recommendations for using censored independent variables are less widespread. See Rigobon and Stoker 2007 for a discussion of censored independent variables.
 
 ## TODO:
+
+- break out examples into vignettes with more detailed commentary
+- release as R package?
