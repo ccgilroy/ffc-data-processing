@@ -42,15 +42,6 @@ recode_na_factor <- function(data) {
   bind_cols(d1, d2) %>% select(one_of(cols_in_order))
 }
 
-recode_na_labelled_OLD <- function(data) {
-  cols_in_order <- names(data)
-  labelled_vars <- get_vars_labelled(data)
-  d1 <- data %>% select(-one_of(labelled_vars)) 
-  d2 <- data %>% select(one_of(labelled_vars))
-  d2[d2 < 0] <- NA
-  bind_cols(d1, d2) %>% select(one_of(cols_in_order))
-}
-
 recode_na_labelled <- function(data) {
   # Filter() is faster than select()
   cols_in_order <- names(data)

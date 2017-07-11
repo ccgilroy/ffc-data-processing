@@ -22,7 +22,8 @@ process_data_maximal <- function(data) {
     labelled_to_numeric() %>%
     character_to_factor() %>%
     character_to_numeric() %>%
-    character_to_factor_or_numeric(threshold = 75) %>%
+    # use a less conservative threshold than default
+    character_to_factor_or_numeric(threshold = 29) %>%
     recode_na_factor() %>%
     recode_na_numeric() %>%
     subset_vars_remove(get_vars_na) %>%

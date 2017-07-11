@@ -8,13 +8,17 @@ Functions to facilitate working with the data set provided by the Fragile Famili
 
 **Data:** You will need to sign up for the Fragile Families Challenge to obtain the Fragile Families data. Place the four data files in the `data/` subdirectory of this project.
 
-**To run:** Run `init.R` to load packages, source all functions, and produce the outputs described in Examples 1 and 2.
+**To run:** Run `init.R` to load packages, source all functions, and produce the outputs described in Examples 1 and 2 from `background.dta`.
 
 ### Example 1: minor data processing
+
+Example 1 turns all labelled variables into factors or numerics as appropriate. It leaves ambiguous character variables unaddressed. (Use `summarize_variable_classes` to see the results of these operations.) In addition, it summarizes information about each variable's label, type, and number of unique values and records this in `output/ffc_variable_types.csv`.
 
 **`process_data_minimal` does not address missingness.** You should remove unusable variables and decide how to address missing observations before using the resulting data set for modeling. The helper functions described below provide potential options.
 
 ### Example 2: significant data processing
+
+Example 2 subsets to constructed variables, does more extensive data processing to handle missing values, character variables, and unusable variables, and merges the resulting data set with the outcomes in `train.csv`.
 
 **`process_data_maximal` makes theoretically unwarranted assumptions about missingness.** In particular, you should think about how to address valid skips (-6s) and possibly modify some of the helper functions before using the resulting data set in modeling.
 
@@ -22,8 +26,8 @@ Functions to facilitate working with the data set provided by the Fragile Famili
 
 For more flexibility and control, you may want to access the provided helper functions directly.
 
-- the `get_vars_*` functions
-- the `recode_na_*` functions. As a rule, `recode_na_character` should *always* be run, to convert the string "NA" to proper `NA`s.
+- the `get_vars_*` functions return the *names* of variables satisfying particular criteria.
+- the `recode_na_*` functions turn Stata labelled missing values into proper R `NA`s. As a rule, `recode_na_character` should *always* be run, to convert the string "NA" to proper `NA`s. The other functions (for factors, labelled, and numerics) should be run with caution, and possibly modified. 
 - the `subset_vars_*` functions are convenience wrappers around `dplyr::select` for ease of use with a `get_vars_*` function, e.g. `background %>% subset_vars_keep(get_vars_constructed)`.
 
 ## Notes about variables
@@ -36,7 +40,7 @@ In `background.dta`, roughly 3000 variables are of the `character` class rather 
 
 Of the rest, a few hundred can be clearly classified as either categorical (factors) or continuous (numeric). The vast majority, however, cannot be unambiguously classified programmatically.
 
-By default, `character_to_factor_or_numeric` uses a very conservative threshold (100), and converts the large majority of these variables to factors. It would be reasonable to lower the threshold to 50 or 25 (29), but it is likely that a few categorical variables will then be inappropriately converted to numerics. A potentially viable alternative would be to handle those variables manually.
+By default, `character_to_factor_or_numeric` uses a very conservative threshold (100), and converts the large majority of these variables to factors. It would be reasonable to lower the threshold to 50 or 25, but it is likely that a few categorical variables will then be inappropriately converted to numerics. A potentially viable alternative would be to handle those variables manually.
 
 ### Censored variables
 
@@ -52,6 +56,6 @@ variable_types %>%
   arrange(desc(unique_values))
 ```
 
-Tobit models are a way of modeling censored dependent variables, but recommendations for censored independent variables are [cite Rigobon and Stoker 2007]
+Tobit models are a way of modeling censored dependent variables, but recommendations for using censored independent variables are less widespread. See Rigobon and Stoker 2007 for a discussion of censored independent variables.
 
 ## TODO:
