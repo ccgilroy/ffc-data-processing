@@ -125,9 +125,6 @@ get_vars_categorical <- function(data) {
 }
 
 get_vars_continuous <- function(data) {
-  # consider stopping if any labelled
-  # what about if any character?
-  # what about warning instead?
   if (any(vapply(data, is.labelled, logical(1)))) {
     warning(
       "Some variables are labelled variables. Convert labelled variables 
