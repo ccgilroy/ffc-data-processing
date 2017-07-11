@@ -12,7 +12,9 @@ Functions to facilitate working with the data set provided by the Fragile Famili
 
 ### Example 1: minor data processing
 
-Example 1 turns all labelled variables into factors or numerics as appropriate. It leaves ambiguous character variables unaddressed. (Use `summarize_variable_classes` to see the results of these operations.) In addition, it summarizes information about each variable's label, type, and number of unique values and records this in `output/ffc_variable_types.csv`.
+Example 1 turns all labelled variables into factors or numerics as appropriate. It leaves ambiguous character variables unaddressed. (Use `summarize_variable_classes` to see the results of these operations.)
+
+In addition, it summarizes information about each variable's label, type, and number of unique values and records this in `output/ffc_variable_types.csv`. Note that the number of unique values refers to *non-NA* values.
 
 **`process_data_minimal` does not address missingness.** You should remove unusable variables and decide how to address missing observations before using the resulting data set for modeling. The helper functions described below provide potential options.
 
@@ -61,4 +63,5 @@ Tobit models are a way of modeling censored dependent variables, but recommendat
 ## TODO:
 
 - break out examples into vignettes with more detailed commentary
+- write tests
 - release as R package?
