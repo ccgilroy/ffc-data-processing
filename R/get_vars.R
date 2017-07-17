@@ -110,14 +110,14 @@ get_vars_labelled_numeric <- function(data) {
 get_vars_categorical <- function(data) {
   if (any(vapply(data, is.labelled, logical(1)))) {
     warning(
-      "Some variables are labelled variables. Convert labelled variables 
-      to factors first in order to include them in evaluation."
+      "Some variables are labelled variables. ", 
+      "Convert labelled variables to factors first in order to include them in evaluation."
     )
   }
   if (any(vapply(data, is.character, logical(1)))) {
     warning(
-      "Some variables are character variables. Convert character variables 
-      to factors first in order to include them in evaluation."    
+      "Some variables are character variables. ", 
+      "Convert character variables to factors first in order to include them in evaluation."    
     )
   }
   categorical_info <- vapply(data, is.factor, logical(1))
@@ -127,14 +127,14 @@ get_vars_categorical <- function(data) {
 get_vars_continuous <- function(data) {
   if (any(vapply(data, is.labelled, logical(1)))) {
     warning(
-      "Some variables are labelled variables. Convert labelled variables 
-      to numerics first in order to include them in evaluation."
+      "Some variables are labelled variables. ", 
+      "Convert labelled variables to numerics first in order to include them in evaluation."
     )
   }
   if (any(vapply(data, is.character, logical(1)))) {
     warning(
-      "Some variables are character variables. Convert character variables 
-      to numerics first in order to include them in evaluation."    
+      "Some variables are character variables. ", 
+      "Convert character variables to numerics first in order to include them in evaluation."    
     )
   }
   

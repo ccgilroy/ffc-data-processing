@@ -1,0 +1,30 @@
+---
+title: "Example 2"
+author: "Connor Gilroy"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "..")
+```
+
+```{r init, message=FALSE}
+source("init.R")
+```
+
+```{r example2}
+# example 2 ----
+# subset to constructed variables
+# process by converting all variables, removing all NAs,
+# and removing variables that are unusable for modeling
+# then merge with train
+
+background <- read_dta("data/background.dta")
+train <- read_csv("data/train.csv")
+ffc <- 
+  background %>% 
+  subset_vars_keep(get_vars_constructed) %>%
+  process_data_maximal() %>%
+  merge_train(train)
+```

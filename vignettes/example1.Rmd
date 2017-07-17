@@ -1,0 +1,30 @@
+---
+title: "Example 1"
+author: "Connor Gilroy"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+---
+
+```{r setup, include=FALSE}
+# equivalently: 
+# knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+knitr::opts_knit$set(root.dir = "..")
+```
+
+```{r init, message=FALSE}
+source("init.R")
+```
+
+```{r example1}
+# example 1 ----
+# process all variables, leaving ambiguous variables as characters
+# does not handle missing values, does not remove any variables
+# then summarize variable type information and write to csv
+
+background <- read_dta("data/background.dta")
+background_processed <- process_data_minimal(background)
+variable_types <- summarize_variables(background, background_processed)
+
+if (!dir.exists("output")) dir.create("output")
+write_csv(variable_types, "output/ffc_variable_types.csv")
+```
