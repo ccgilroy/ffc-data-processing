@@ -85,11 +85,14 @@ if (!<span class="st">&quot;FFCRegressionImputation&quot;</span> %in%<span class
 }
 
 <span class="kw">library</span>(FFCRegressionImputation)</code></pre></div>
-<p>Then, source the required packages and functions from <code>ffc-data-processing</code>.</p>
+<p>Then, source the required packages and functions from <a href="https://github.com/ccgilroy/ffc-data-processing">ffc-data-processing</a>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">source</span>(<span class="st">&quot;init.R&quot;</span>)</code></pre></div>
 </div>
 <div id="get-variable-types" class="section level2">
 <h2>Get variable types</h2>
+<p>First, we use the Stata background.dta file to extract information about variable types. For this vignette, only the <em>constructed</em> variables are treated. Subsetting the variables makes later steps computationally feasible.</p>
+<p>This function chain is very similar to the code in the vignette <a href="https://ccgilroy.github.io/ffc-data-processing/vignettes/example2.html">Example 2</a>, but broken out into individual steps.</p>
+<p>The results of the data processing are summarized below. Categorical variables are now factors, and continuous variables (as well as the <code>challengeID</code> identifier) are numeric.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># get covariate variable type information from Stata file</span>
 background_dta &lt;-<span class="st"> </span><span class="kw">read_dta</span>(<span class="st">&quot;data/background.dta&quot;</span>)
 
@@ -107,8 +110,17 @@ background_variable_types &lt;-<span class="st"> </span>
 <span class="kw">summarize_variable_classes</span>(background_variable_types)</code></pre></div>
 <pre><code>##  factor numeric 
 ##     269      79</code></pre>
+<p>Using this processed data set, we store the names of the categorical and continuous variables separately.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">categorical_vars &lt;-<span class="st"> </span><span class="kw">get_vars_categorical</span>(background_variable_types)
 continuous_vars &lt;-<span class="st"> </span><span class="kw">get_vars_continuous</span>(background_variable_types)</code></pre></div>
+</div>
+<div id="do-imputation" class="section level2">
+<h2>Do imputation</h2>
+<p>These steps make use of functions from <code>FFCRegressionImputation</code> to do logical and regression-based imputation.</p>
+<div id="initial-processing" class="section level3">
+<h3>Initial processing</h3>
+<p>The initialization function from <code>FFCRegressionImputation</code> reads in and runs on the background.csv file. That isn’t a problem, because we’ve already retrieved and stored the information we need from the background.dta file.</p>
+<p>The function logically imputes some missing values for age-related variables. It also generates variables with NA count information, but these aren’t included in subsequent steps of this vignette.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># run initial cleaning and imputation for all variables on csv file</span>
 background_csv &lt;-<span class="st"> </span><span class="kw">initImputation</span>(<span class="dt">data =</span> <span class="st">&quot;data/background.csv&quot;</span>)</code></pre></div>
 <pre><code>## Importing data...</code></pre>
@@ -117,33 +129,57 @@ background_csv &lt;-<span class="st"> </span><span class="kw">initImputation</sp
 ## [1] &quot;Running logical age imputation ... &quot;
 ## [1] &quot;Done with logical age imputation!&quot;</code></pre>
 <pre><code>## Drop missing data...</code></pre>
+</div>
+<div id="subset-and-split-variables" class="section level3">
+<h3>Subset and split variables</h3>
+<p>Next, use the previously calculated information about which variables are categorical and which are continuous to split the new data frame in two sets of constructed variables. In this vignette, we will only run regression-based imputation on the continuous variables.</p>
+<p>Note that <code>initImputation</code> renames three constructed variables by prefixing them with <em>c-</em>. These variables are included manually in <code>get_vars_constructed</code> and not renamed there, so the new variables need to be explicitly included here.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># split csv file using variable type information</span>
-<span class="co"># TODO: renamed c* variables are a problem</span>
 background_categorical &lt;-<span class="st"> </span>
 <span class="st">  </span>background_csv %&gt;%
-<span class="st">  </span><span class="kw">select</span>(challengeID, <span class="kw">one_of</span>(categorical_vars))
+<span class="st">  </span><span class="kw">select</span>(challengeID, <span class="kw">one_of</span>(categorical_vars), co5oint, ct5int)
 
 background_continuous &lt;-<span class="st"> </span>
 <span class="st">  </span>background_csv %&gt;%
-<span class="st">  </span><span class="kw">select</span>(challengeID, <span class="kw">one_of</span>(continuous_vars))
+<span class="st">  </span><span class="kw">select</span>(challengeID, <span class="kw">one_of</span>(continuous_vars), cn5d2_age)
 
+<span class="co"># not used, included for illustrative purposes only</span>
 background_other &lt;-<span class="st"> </span>
 <span class="st">  </span>background_csv %&gt;%
-<span class="st">  </span><span class="kw">select</span>(-<span class="kw">one_of</span>(continuous_vars, categorical_vars))
-
-<span class="co"># impute numeric covariates using regression imputation</span>
-output &lt;-<span class="st"> </span><span class="kw">corMatrix</span>(<span class="dt">data=</span>background_continuous, <span class="dt">parallel =</span> <span class="dv">1</span>)</code></pre></div>
+<span class="st">  </span><span class="kw">select</span>(-<span class="kw">one_of</span>(continuous_vars, categorical_vars))</code></pre></div>
+</div>
+<div id="calculate-correlation-matrix" class="section level3">
+<h3>Calculate correlation matrix</h3>
+<p>The <code>corMatrix</code> function produces a matrix of correlations between covariates, and an object containing both this matrix and a data frame for use in subsequent imputation.</p>
+<p>This is the most computationally-intensive step, and subsetting the background covariates down to the constructed continuous covariates speeds it up considerably. It can also be run in parallel, as it is here.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># impute numeric covariates using regression imputation</span>
+output &lt;-<span class="st"> </span><span class="kw">corMatrix</span>(<span class="dt">data =</span> background_continuous, <span class="dt">parallel =</span> <span class="dv">1</span>)</code></pre></div>
 <pre><code>## Enabling parallelization</code></pre>
+</div>
+<div id="do-regression-imputation" class="section level3">
+<h3>Do regression imputation</h3>
+<p><code>regImputation</code> uses the most correlated predictors to impute missing values in the given data frame. Here, we impute only the continuous variables.</p>
+<p>By default, this uses an OLS linear model; it can run a LASSO with the <code>polywog</code> package instead.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">background_continuous_imputed &lt;-<span class="st"> </span>
-<span class="st">  </span><span class="kw">regImputation</span>(output$df, output$corMatrix)</code></pre></div>
+<span class="st">  </span><span class="kw">regImputation</span>(output$df, output$corMatrix, <span class="dt">parallel =</span> <span class="dv">1</span>)</code></pre></div>
 <pre><code>## Using lm...</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## merge back together
+<pre><code>## Enabling parallelization</code></pre>
+</div>
+</div>
+<div id="merge-data" class="section level2">
+<h2>Merge data</h2>
+<p>Now, we can join the categorical variables we set aside and the newly imputed continuous variables back together. For consistency’s sake, we rearrange them into the original order.</p>
+<p>Some variables have been dropped due to lack of variation, and these now generate warnings which can be ignored.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># merge continuous and categorical variables back together</span>
 background_imputed &lt;-<span class="st"> </span>
 <span class="st">  </span><span class="kw">full_join</span>(background_categorical, background_continuous_imputed, 
             <span class="dt">by =</span> <span class="st">&quot;challengeID&quot;</span>) %&gt;%
-<span class="st">  </span><span class="kw">select</span>(challengeID, <span class="kw">one_of</span>(categorical_vars, continuous_vars))</code></pre></div>
-<pre><code>## Warning: Unknown variables: `cn5md_case_con`, `cn5md_case_lib`, `n5d2_age`</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## merge with train
+<span class="st">  </span><span class="co"># put variables in order</span>
+<span class="st">  </span><span class="kw">select</span>(challengeID, <span class="kw">one_of</span>(<span class="kw">get_vars_constructed</span>(background_csv)))</code></pre></div>
+<pre><code>## Warning: Unknown variables: `cn5md_case_con`, `cn5md_case_lib`,
+## `cn5d2_age`, `n5d2_age`</code></pre>
+<p>Finally, read in and merge the outcome data. (<code>merge_train</code> is a wrapper around <code>dplyr::full_join</code> with special handling for the joining variable <code>challengeID</code>.)</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># merge background data with train</span>
 train &lt;-<span class="st"> </span><span class="kw">read_csv</span>(<span class="st">&quot;data/train.csv&quot;</span>)</code></pre></div>
 <pre><code>## Parsed with column specification:
 ## cols(
@@ -156,6 +192,7 @@ train &lt;-<span class="st"> </span><span class="kw">read_csv</span>(<span class
 ##   jobTraining = col_integer()
 ## )</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">ffc &lt;-<span class="st"> </span><span class="kw">merge_train</span>(background_imputed, train)</code></pre></div>
+<p>To build a model of these outcomes, you would want to treat the missing values in the categorical variables as well, either by treating them identically to the continuous variables and running them through <code>regImputation</code> or by using some other imputation strategy.</p>
 </div>
 
 

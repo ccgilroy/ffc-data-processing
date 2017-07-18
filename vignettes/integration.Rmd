@@ -25,7 +25,7 @@ if (!"FFCRegressionImputation" %in% installed.packages()) {
 library(FFCRegressionImputation)
 ```
 
-Then, source the required packages and functions from `ffc-data-processing`.
+Then, source the required packages and functions from [ffc-data-processing](https://github.com/ccgilroy/ffc-data-processing).
 
 ```{r init, message=FALSE}
 source("init.R")
@@ -33,7 +33,13 @@ source("init.R")
 
 ## Get variable types
 
-```{r variable_types}
+First, we use the Stata background.dta file to extract information about variable types. For this vignette, only the *constructed* variables are treated. Subsetting the variables makes later steps computationally feasible.
+
+This function chain is very similar to the code in the vignette [Example 2](https://ccgilroy.github.io/ffc-data-processing/vignettes/example2.html), but broken out into individual steps.
+
+The results of the data processing are summarized below. Categorical variables are now factors, and continuous variables (as well as the `challengeID` identifier) are numeric.
+
+```{r variable_types1}
 # get covariate variable type information from Stata file
 background_dta <- read_dta("data/background.dta")
 
@@ -49,44 +55,95 @@ background_variable_types <-
   character_to_factor_or_numeric(threshold = 29) 
 
 summarize_variable_classes(background_variable_types)
+```
 
+Using this processed data set, we store the names of the categorical and continuous variables separately.
+
+```{r variable_types2}
 categorical_vars <- get_vars_categorical(background_variable_types)
 continuous_vars <- get_vars_continuous(background_variable_types)
 ```
 
+## Do imputation
 
-```{r}
+These steps make use of functions from `FFCRegressionImputation` to do logical and regression-based imputation. 
+
+### Initial processing
+
+The initialization function from `FFCRegressionImputation` reads in and runs on the background.csv file. That isn't a problem, because we've already retrieved and stored the information we need from the background.dta file.
+
+The function logically imputes some missing values for age-related variables. It also generates variables with NA count information, but these aren't included in subsequent steps of this vignette.
+
+```{r imputation1}
 # run initial cleaning and imputation for all variables on csv file
 background_csv <- initImputation(data = "data/background.csv")
+```
 
+### Subset and split variables
+
+Next, use the previously calculated information about which variables are categorical and which are continuous to split the new data frame in two sets of constructed variables. In this vignette, we will only run regression-based imputation on the continuous variables.
+
+Note that `initImputation` renames three constructed variables by prefixing them with *c-*. These variables are included manually in `get_vars_constructed` and not renamed there, so the new variables need to be explicitly included here. 
+
+```{r imputation2}
 # split csv file using variable type information
-# TODO: renamed c* variables are a problem
 background_categorical <- 
   background_csv %>%
-  select(challengeID, one_of(categorical_vars))
+  select(challengeID, one_of(categorical_vars), co5oint, ct5int)
 
 background_continuous <- 
   background_csv %>%
-  select(challengeID, one_of(continuous_vars))
+  select(challengeID, one_of(continuous_vars), cn5d2_age)
 
+# not used, included for illustrative purposes only
 background_other <- 
   background_csv %>%
   select(-one_of(continuous_vars, categorical_vars))
+```
 
+### Calculate correlation matrix
+
+The `corMatrix` function produces a matrix of correlations between covariates, and an object containing both this matrix and a data frame for use in subsequent imputation.
+
+This is the most computationally-intensive step, and subsetting the background covariates down to the constructed continuous covariates speeds it up considerably. It can also be run in parallel, as it is here.  
+
+```{r imputation3}
 # impute numeric covariates using regression imputation
-output <- corMatrix(data=background_continuous, parallel = 1)
+output <- corMatrix(data = background_continuous, parallel = 1)
+```
 
+### Do regression imputation
+
+`regImputation` uses the most correlated predictors to impute missing values in the given data frame. Here, we impute only the continuous variables.
+
+By default, this uses an OLS linear model; it can run a LASSO with the `polywog` package instead.
+
+```{r imputation4}
 background_continuous_imputed <- 
-  regImputation(output$df, output$corMatrix)
+  regImputation(output$df, output$corMatrix, parallel = 1)
+```
 
-## merge back together
+## Merge data
+
+Now, we can join the categorical variables we set aside and the newly imputed continuous variables back together. For consistency's sake, we rearrange them into the original order.
+
+Some variables have been dropped due to lack of variation, and these now generate warnings which can be ignored.
+
+```{r merge1}
+# merge continuous and categorical variables back together
 background_imputed <- 
   full_join(background_categorical, background_continuous_imputed, 
             by = "challengeID") %>%
-  select(challengeID, one_of(categorical_vars, continuous_vars))
+  # put variables in order
+  select(challengeID, one_of(get_vars_constructed(background_csv)))
+```
 
-## merge with train
+Finally, read in and merge the outcome data. (`merge_train` is a wrapper around `dplyr::full_join` with special handling for the joining variable `challengeID`.) 
+
+```{r merge2}
+# merge background data with train
 train <- read_csv("data/train.csv")
 ffc <- merge_train(background_imputed, train)
 ```
 
+To build a model of these outcomes, you would want to treat the missing values in the categorical variables as well, either by treating them identically to the continuous variables and running them through `regImputation` or by using some other imputation strategy.
