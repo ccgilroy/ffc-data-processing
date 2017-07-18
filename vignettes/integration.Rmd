@@ -1,0 +1,92 @@
+---
+title: "Integration with `FFCRegressionImputation`"
+author: "Connor Gilroy"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+---
+
+This vignette demonstrates the integration of the `ffc-data-processing` methods with the imputation methods from the `FFCRegressionImputation` package by Anna Filippova.
+
+## Setup
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "..")
+```
+
+First, install the [FFCRegressionImputation](https://github.com/annafil/FFCRegressionImputation) package from GitHub using `devtools`.
+
+```{r packages}
+if (!"devtools" %in% installed.packages()) install.packages("devtools")
+
+if (!"FFCRegressionImputation" %in% installed.packages()) {
+  devtools::install_github("annafil/FFCRegressionImputation")
+}
+
+library(FFCRegressionImputation)
+```
+
+Then, source the required packages and functions from `ffc-data-processing`.
+
+```{r init, message=FALSE}
+source("init.R")
+```
+
+## Get variable types
+
+```{r variable_types}
+# get covariate variable type information from Stata file
+background_dta <- read_dta("data/background.dta")
+
+background_variable_types <- 
+  background_dta %>%
+  subset_vars_keep(get_vars_constructed) %>%
+  recode_na_character() %>%
+  labelled_to_factor() %>%
+  labelled_to_numeric() %>%
+  character_to_factor() %>%
+  character_to_numeric() %>%
+  # use a less conservative threshold than default
+  character_to_factor_or_numeric(threshold = 29) 
+
+summarize_variable_classes(background_variable_types)
+
+categorical_vars <- get_vars_categorical(background_variable_types)
+continuous_vars <- get_vars_continuous(background_variable_types)
+```
+
+
+```{r}
+# run initial cleaning and imputation for all variables on csv file
+background_csv <- initImputation(data = "data/background.csv")
+
+# split csv file using variable type information
+# TODO: renamed c* variables are a problem
+background_categorical <- 
+  background_csv %>%
+  select(challengeID, one_of(categorical_vars))
+
+background_continuous <- 
+  background_csv %>%
+  select(challengeID, one_of(continuous_vars))
+
+background_other <- 
+  background_csv %>%
+  select(-one_of(continuous_vars, categorical_vars))
+
+# impute numeric covariates using regression imputation
+output <- corMatrix(data=background_continuous, parallel = 1)
+
+background_continuous_imputed <- 
+  regImputation(output$df, output$corMatrix)
+
+## merge back together
+background_imputed <- 
+  full_join(background_categorical, background_continuous_imputed, 
+            by = "challengeID") %>%
+  select(challengeID, one_of(categorical_vars, continuous_vars))
+
+## merge with train
+train <- read_csv("data/train.csv")
+ffc <- merge_train(background_imputed, train)
+```
+
