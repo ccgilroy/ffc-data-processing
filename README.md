@@ -4,19 +4,23 @@ Functions to facilitate working with the data set provided by the Fragile Famili
 
 ## Getting started
 
-**Required packages:** This repo requires a number of [Tidyverse](http://tidyverse.org/) packages---dplyr, forcats, haven, labelled, readr, and stringr. In particular, both haven and labelled are essential for working with Stata files in R.
+To use this code, clone this repository to your local machine: `git clone https://github.com/ccgilroy/ffc-data-processing.git`.
+
+**Required packages:** This repository requires a number of [Tidyverse](http://tidyverse.org/) packages---`dplyr`, `forcats`, `haven`, `labelled`, `readr`, and `stringr`. In particular, both `haven` and `labelled` are essential for working with Stata files in R.
 
 **Data:** You will need to sign up for the Fragile Families Challenge to obtain the Fragile Families data. Place the four data files in the `data/` subdirectory of this project.
 
-**To run:** Run `init.R` to load packages, source all functions, and produce the outputs described in Examples 1 and 2 from `background.dta` and `train.csv`.
+**To run:** Run `source('init.R')` to load packages and source all functions. Run the vignettes to produce the outputs described in Examples 1 and 2 from `background.dta` and `train.csv`.
+
+## Vignettes
 
 ### Example 1: minor data processing
 
-Example 1 turns all labelled variables into factors or numerics as appropriate. It leaves ambiguous character variables unaddressed. (Use `summarize_variable_classes` to see the results of these operations.)
+[Example 1](https://ccgilroy.github.io/ffc-data-processing/vignettes/example1.html) turns all labelled variables into factors or numerics as appropriate. It leaves ambiguous character variables unaddressed. (Use `summarize_variable_classes` to see the results of these operations.)
 
 In addition, it summarizes information about each variable's label, type, and number of unique values and records this in `output/ffc_variable_types.csv`. See the "Variable types" section below for more information about this csv file.
 
-```{r example_1}
+```
 background <- read_dta("data/background.dta")
 background_processed <- process_data_minimal(background)
 variable_types <- summarize_variables(background, background_processed)
@@ -26,9 +30,9 @@ variable_types <- summarize_variables(background, background_processed)
 
 ### Example 2: significant data processing
 
-Example 2 subsets to constructed variables, does more extensive data processing to handle missing values, character variables, and unusable variables, and merges the resulting data set with the outcomes in `train.csv`.
+[Example 2](https://ccgilroy.github.io/ffc-data-processing/vignettes/example2.html) subsets to constructed variables, does more extensive data processing to handle missing values, character variables, and unusable variables, and merges the resulting data set with the outcomes in `train.csv`.
 
-```{r example_2}
+```
 train <- read_csv("data/train.csv")
 ffc <-
   background %>%
@@ -38,6 +42,10 @@ ffc <-
 ```
 
 **`process_data_maximal` makes theoretically unwarranted assumptions about missingness.** In particular, you should think about how to address valid skips (-6s) and possibly modify some of the helper functions before using the resulting data set in modeling.
+
+### Integration with `FFCRegressionImputation`
+
+An [extended vignette](https://ccgilroy.github.io/ffc-data-processing/vignettes/integration.html) demonstrates integration with the [FFCRegressionImputation](https://github.com/annafil/FFCRegressionImputation) package by Anna Filippova. 
 
 ## Helper functions
 
@@ -76,7 +84,7 @@ For more flexibility and control, you may want to access the provided helper fun
 
 `unique_values` is the number of *non-NA* unique values that variable takes on. This value will be 0 if all observations are NA, and it will generally be larger for continuous variables and smaller for categorical variables.
 
-`variable_type` represents a best guess at the level of measurement of each variable, which is a critical piece of information for appropriately treating a variable in a statistical model. Possible values are "categorical," "continuous," or "unknown." These are calculated from value labels and other distinguishing information. The other metadata in the data frame can be used to manually assess the validity of this classification. 
+`variable_type` represents a best guess at the level of measurement of each variable, which is a critical piece of information for appropriately treating a variable in a statistical model. Possible values are "categorical," "continuous," or "unknown." These are calculated from value labels and other distinguishing information. The other metadata in the data frame can be used to manually assess the validity of this classification.
 
 The version of this data frame that is saved in `output/ffc_variable_types.csv` uses `process_data_minimal` and is conservative about assigning variables to types. As a result, approximately 2000 variables are listed as "unknown." You could use `process_data_maximal` instead to make reasonably accurate assignments for many of these variables.
 
