@@ -2,6 +2,8 @@
 
 Functions to facilitate working with the data set provided by the Fragile Families Challenge, with a focus on transforming the data into a form appropriate for statistical modeling. For more information on the challenge: http://www.fragilefamilieschallenge.org/.
 
+Vignettes: [Example 1](https://ccgilroy.github.io/ffc-data-processing/vignettes/example1.html) [Example 2](https://ccgilroy.github.io/ffc-data-processing/vignettes/example2.html) [Integration with FFCRegressionImputation](https://ccgilroy.github.io/ffc-data-processing/vignettes/integration.html)
+
 ## Getting started
 
 To use this code, clone this repository to your local machine: `git clone https://github.com/ccgilroy/ffc-data-processing.git`.
@@ -13,6 +15,8 @@ To use this code, clone this repository to your local machine: `git clone https:
 **To run:** Run `source('init.R')` to load packages and source all functions. Run the vignettes to produce the outputs described in Examples 1 and 2 from `background.dta` and `train.csv`.
 
 ## Vignettes
+
+These vignettes can each be run from the respective RMarkdown files in the `vignettes/` subdirectory.
 
 ### Example 1: minor data processing
 
@@ -45,7 +49,7 @@ ffc <-
 
 ### Integration with `FFCRegressionImputation`
 
-An [extended vignette](https://ccgilroy.github.io/ffc-data-processing/vignettes/integration.html) demonstrates integration with the [FFCRegressionImputation](https://github.com/annafil/FFCRegressionImputation) package by Anna Filippova. 
+An [extended vignette](https://ccgilroy.github.io/ffc-data-processing/vignettes/integration.html) demonstrates integration with the [FFCRegressionImputation](https://github.com/annafil/FFCRegressionImputation) package by Anna Filippova.
 
 ## Helper functions
 
