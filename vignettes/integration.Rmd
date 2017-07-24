@@ -64,6 +64,31 @@ categorical_vars <- get_vars_categorical(background_variable_types)
 continuous_vars <- get_vars_continuous(background_variable_types)
 ```
 
+It's important to check that we've classified the variables appropriately; we can do this using the metadata provided by the `summarize_variables` function.
+
+```{r variable_types3}
+variable_metadata <- 
+  background_dta %>%
+  subset_vars_keep(get_vars_constructed) %>%
+  summarize_variables(background_variable_types) %>%
+  arrange(variable_type, desc(unique_values))
+
+variable_metadata %>% head(10) %>% print(width = 91)
+```
+
+It turns out that [some censored continuous variables](https://github.com/ccgilroy/ffc-data-processing#censored-variables) are converted to factors instead of numerics. For this example, we want to discard the information about censoring for the first 8 variables shown above. In other words, we are going to treat someone who is labelled as "20 and younger" as if we knew they were *exactly* 20 years old.
+
+We do this by removing those variable names from the `categorical_vars` list, and adding them to the `continuous_vars` list.
+
+```{r variable_types4}
+censored_vars <- variable_metadata$variable[1:8]
+categorical_vars <- 
+  categorical_vars[!categorical_vars %in% censored_vars]
+continuous_vars <- c(continuous_vars, censored_vars)
+```
+
+We now have `r length(categorical_vars)` categorical variables and `r length(continuous_vars)` continuous variables, in addition to the `challengeID` identifier. 
+
 ## Do imputation
 
 These steps make use of functions from `FFCRegressionImputation` to do logical and regression-based imputation. 

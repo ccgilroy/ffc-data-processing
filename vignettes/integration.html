@@ -12,7 +12,7 @@
 
 <meta name="author" content="Connor Gilroy" />
 
-<meta name="date" content="2017-07-17" />
+<meta name="date" content="2017-07-24" />
 
 <title>Integration with FFCRegressionImputation</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Integration with <code>FFCRegressionImputation</code></h1>
 <h4 class="author"><em>Connor Gilroy</em></h4>
-<h4 class="date"><em>2017-07-17</em></h4>
+<h4 class="date"><em>2017-07-24</em></h4>
 
 
 
@@ -113,6 +113,35 @@ background_variable_types &lt;-<span class="st"> </span>
 <p>Using this processed data set, we store the names of the categorical and continuous variables separately.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">categorical_vars &lt;-<span class="st"> </span><span class="kw">get_vars_categorical</span>(background_variable_types)
 continuous_vars &lt;-<span class="st"> </span><span class="kw">get_vars_continuous</span>(background_variable_types)</code></pre></div>
+<p>It’s important to check that we’ve classified the variables appropriately; we can do this using the metadata provided by the <code>summarize_variables</code> function.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">variable_metadata &lt;-<span class="st"> </span>
+<span class="st">  </span>background_dta %&gt;%
+<span class="st">  </span><span class="kw">subset_vars_keep</span>(get_vars_constructed) %&gt;%
+<span class="st">  </span><span class="kw">summarize_variables</span>(background_variable_types) %&gt;%
+<span class="st">  </span><span class="kw">arrange</span>(variable_type, <span class="kw">desc</span>(unique_values))
+
+variable_metadata %&gt;%<span class="st"> </span><span class="kw">head</span>(<span class="dv">10</span>) %&gt;%<span class="st"> </span><span class="kw">print</span>(<span class="dt">width =</span> <span class="dv">91</span>)</code></pre></div>
+<pre><code>## # A tibble: 10 x 4
+##    variable                                                            label unique_values
+##       &lt;chr&gt;                                                            &lt;chr&gt;         &lt;dbl&gt;
+##  1   cf4age                               Constructed - Father's age (years)            41
+##  2   cm4age                               Constructed - Mother's age (years)            34
+##  3  cm3amrf             Constructed - Mother age when married father (years)            26
+##  4  cm4amrf             Constructed - Mother age when married father (years)            26
+##  5  cm3alvf Constructed - Mother age when started living with father (years)            24
+##  6  cm4alvf Constructed - Mother age when started living with father (years)            24
+##  7 cm4b_age     Constructed - Child age at time of mother interview (months)            17
+##  8 cf4b_age     Constructed - Child age at time of father interview (months)            17
+##  9  cm2relf    Constructed - Mother's romantic relationship w/BF at one-year            10
+## 10  cm3relf      Constructed - Mother relationship with father at year three            10
+## # ... with 1 more variables: variable_type &lt;chr&gt;</code></pre>
+<p>It turns out that <a href="https://github.com/ccgilroy/ffc-data-processing#censored-variables">some censored continuous variables</a> are converted to factors instead of numerics. For this example, we want to discard the information about censoring for the first 8 variables shown above. In other words, we are going to treat someone who is labelled as “20 and younger” as if we knew they were <em>exactly</em> 20 years old.</p>
+<p>We do this by removing those variable names from the <code>categorical_vars</code> list, and adding them to the <code>continuous_vars</code> list.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">censored_vars &lt;-<span class="st"> </span>variable_metadata$variable[<span class="dv">1</span>:<span class="dv">8</span>]
+categorical_vars &lt;-<span class="st"> </span>
+<span class="st">  </span>categorical_vars[!categorical_vars %in%<span class="st"> </span>censored_vars]
+continuous_vars &lt;-<span class="st"> </span><span class="kw">c</span>(continuous_vars, censored_vars)</code></pre></div>
+<p>We now have 261 categorical variables and 86 continuous variables, in addition to the <code>challengeID</code> identifier.</p>
 </div>
 <div id="do-imputation" class="section level2">
 <h2>Do imputation</h2>
@@ -176,8 +205,7 @@ background_imputed &lt;-<span class="st"> </span>
             <span class="dt">by =</span> <span class="st">&quot;challengeID&quot;</span>) %&gt;%
 <span class="st">  </span><span class="co"># put variables in order</span>
 <span class="st">  </span><span class="kw">select</span>(challengeID, <span class="kw">one_of</span>(<span class="kw">get_vars_constructed</span>(background_csv)))</code></pre></div>
-<pre><code>## Warning: Unknown variables: `cn5md_case_con`, `cn5md_case_lib`,
-## `cn5d2_age`, `n5d2_age`</code></pre>
+<pre><code>## Warning: Unknown variables: `cm3alvf`</code></pre>
 <p>Finally, read in and merge the outcome data. (<code>merge_train</code> is a wrapper around <code>dplyr::full_join</code> with special handling for the joining variable <code>challengeID</code>.)</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># merge background data with train</span>
 train &lt;-<span class="st"> </span><span class="kw">read_csv</span>(<span class="st">&quot;data/train.csv&quot;</span>)</code></pre></div>
