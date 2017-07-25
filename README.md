@@ -2,7 +2,7 @@
 
 Functions to facilitate working with the data set provided by the Fragile Families Challenge, with a focus on transforming the data into a form appropriate for statistical modeling. For more information on the challenge: http://www.fragilefamilieschallenge.org/.
 
-Vignettes: [Example 1](https://ccgilroy.github.io/ffc-data-processing/vignettes/example1.html) [Example 2](https://ccgilroy.github.io/ffc-data-processing/vignettes/example2.html) [Integration with FFCRegressionImputation](https://ccgilroy.github.io/ffc-data-processing/vignettes/integration.html)
+Vignettes: [Example 1](https://ccgilroy.github.io/ffc-data-processing/vignettes/example1.html), [Example 2](https://ccgilroy.github.io/ffc-data-processing/vignettes/example2.html), [Integration with FFCRegressionImputation](https://ccgilroy.github.io/ffc-data-processing/vignettes/integration.html), [A more subjective take on variable metadata](https://ccgilroy.github.io/ffc-data-processing/vignettes/variable_metadata.html)
 
 ## Getting started
 
