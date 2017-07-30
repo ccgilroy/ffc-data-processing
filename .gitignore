@@ -7,3 +7,4 @@ data/background.csv
 data/background.dta
 data/prediction.csv
 data/train.csv
+data/*.rds
