@@ -28,6 +28,12 @@ background <- bind_cols(d1, d2) %>% select(one_of(names(background)))
 
 write_rds(background, "data/background_to_mi.rds")
 
+background_constructed <- 
+  background %>%
+  subset_vars_keep(get_vars_constructed)
+
+write_rds(background_constructed, "data/background_constructed_to_mi.rds")
+
 ffvars <- ffvars[ffvars %in% names(background)]
 background_ffvars <- background %>% select(challengeID, one_of(ffvars))
 background_ffvars$hv5_ppvtpr <- as.numeric(background_ffvars$hv5_ppvtpr)
